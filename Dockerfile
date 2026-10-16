@@ -31,6 +31,8 @@ RUN apt-get update \
         gcc \
         git \
         make \
+        lua5.4 \
+        luarocks \        
         maven \
         ninja-build \
         nodejs \
