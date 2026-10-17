@@ -32,7 +32,7 @@ RUN apt-get update \
         git \
         make \
         lua5.4 \
-        luarocks \        
+        luarocks \
         maven \
         ninja-build \
         nodejs \
@@ -41,6 +41,13 @@ RUN apt-get update \
         pkg-config \
         unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Lune: standalone Luau runtime (prebuilt binary, pinned version)
+RUN curl -fsSL https://github.com/lune-org/lune/releases/download/v0.10.5/lune-0.10.5-linux-x86_64.zip -o /tmp/lune.zip \
+    && unzip -q /tmp/lune.zip -d /usr/local/bin \
+    && chmod +x /usr/local/bin/lune \
+    && rm /tmp/lune.zip \
+    && lune --version
 
 COPY --from=go-base /usr/local/go /usr/local/go
 COPY --from=rust-base /usr/local/cargo /usr/local/cargo
