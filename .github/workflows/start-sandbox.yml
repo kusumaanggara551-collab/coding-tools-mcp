@@ -151,6 +151,22 @@ jobs:
           unzip -q ghidra_*_PUBLIC_*.zip -d "$GITHUB_WORKSPACE"
           mv "$GITHUB_WORKSPACE"/ghidra_*_PUBLIC "$GITHUB_WORKSPACE/ghidra"
 
+          # Make Ghidra always use the JDK 21 copy, as seen from inside the container.
+          echo "JAVA_HOME_OVERRIDE=/workspace/jdk" >> "$GITHUB_WORKSPACE/ghidra/support/launch.properties"
+
+          # Keep jdk/ and ghidra/ out of git status in the workspace.
+          if [[ -d "$GITHUB_WORKSPACE/.git" ]]; then
+            {
+              echo "jdk/"
+              echo "ghidra/"
+            } >> "$GITHUB_WORKSPACE/.git/info/exclude"
+          fi
+
+          # Fail the job loudly if the install is broken.
+          test -x "$GITHUB_WORKSPACE/ghidra/support/analyzeHeadless"
+          "$GITHUB_WORKSPACE/jdk/bin/java" -version
+          ls "$GITHUB_WORKSPACE/ghidra"
+
       - name: Resolve sandbox settings
         id: settings
         env:
@@ -296,7 +312,7 @@ jobs:
           docker rm -f coding-tools-mcp-sandbox >/dev/null 2>&1 || true
           MCP_TOKEN="$(cat "$MCP_TOKEN_FILE")"
 
-          shell_env_set='{"CARGO_HOME":"/usr/local/cargo","RUSTUP_HOME":"/usr/local/rustup","GIT_CONFIG_GLOBAL":"/etc/coding-tools-mcp/gitconfig"}'
+          shell_env_set='{"CARGO_HOME":"/usr/local/cargo","RUSTUP_HOME":"/usr/local/rustup","GIT_CONFIG_GLOBAL":"/etc/coding-tools-mcp/gitconfig","JAVA_HOME":"/workspace/jdk","GHIDRA_INSTALL_DIR":"/workspace/ghidra"}'
           docker_args=(
             -d --rm
             --name coding-tools-mcp-sandbox
@@ -310,7 +326,7 @@ jobs:
             -e "CODING_TOOLS_MCP_OAUTH_PASSWORD=iaskediutmypromptatrandomnigjtgoonyesyeeidkbrostfugnbkoveit"
             -e "CODING_TOOLS_MCP_TRUST_PROXY_HEADERS=1"
             -e "CODING_TOOLS_MCP_PERMISSION_MODE=$PERMISSION_MODE"
-            -e CODING_TOOLS_MCP_EXEC_ALLOW_ROOTS=/etc/java-17-openjdk:/etc/maven:/etc/coding-tools-mcp
+            -e CODING_TOOLS_MCP_EXEC_ALLOW_ROOTS=/etc/java-17-openjdk:/etc/maven:/etc/coding-tools-mcp:/workspace/ghidra:/workspace/jdk
             -e "CODING_TOOLS_MCP_SHELL_ENV_SET=$shell_env_set"
             -v "$GITHUB_WORKSPACE:/workspace"
             -v "$GIT_CONFIG:/etc/coding-tools-mcp/gitconfig:ro"
